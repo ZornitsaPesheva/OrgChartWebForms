@@ -91,8 +91,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head runat="server">
     <title></title>
-    <script src="https://balkangraph.com/js/latest/OrgChart.js"></script>
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+    <script src="https://balkan.app/js/OrgChart.js"></script>
     <style type="text/css">
         html, body {
             margin: 0px;
@@ -129,36 +128,54 @@
             }
         });
 
-        chart.on('add', function (sender, n) {
-            $.ajax({
-                type: 'POST',
-                url: '<%= ResolveUrl("~/Default.aspx/Add") %>',
-                data: JSON.stringify(n),
-                contentType: 'application/json; charset=utf-8',
-                dataType: 'json'
-            });
+
+        chart.onAddNode((args) => {
+            let node = args.data;
+            node.id = 0;
+            node.pid = parseInt(node.pid);
+            node.fullName = "John Smith";
+            node.tags = "new";
+            fetch("<%= ResolveUrl("~/Default.aspx/Add") %>", {
+                method: "POST",
+                body: JSON.stringify(node),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(chart.addNode(node))
+            .catch(error => console.error(error));
+            return false;
         });
 
 
-        chart.on('remove', function (sender, id) {
-            $.ajax({
-                type: 'POST',
-                url: '<%= ResolveUrl("~/Default.aspx/Remove") %>',
-                data: JSON.stringify({ id: id }),
-                contentType: 'application/json; charset=utf-8',
-                dataType: 'json'
-            });
+        chart.onRemoveNode((args) => {
+            fetch("<%= ResolveUrl("~/Default.aspx/Remove") %>", {
+                method: "POST",
+                body: JSON.stringify({ id: args.id }),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+                .then(chart.removeNode(args.id))
+            .catch(error => console.error(error));
+            return true;
         });
 
-        chart.on('update', function (sender, oldNode, newNode) {
-            $.ajax({
-                type: 'POST',
-                url: '<%= ResolveUrl("~/Default.aspx/Update") %>',
-                data: JSON.stringify({ oldNode: oldNode, newNode: newNode }),
-                contentType: 'application/json; charset=utf-8',
-                dataType: 'json'
-            });
+
+        chart.onUpdateNode((args) => {
+            let newNode = args.newData;
+            fetch("<%= ResolveUrl("~/Default.aspx/Update") %>", {
+                method: "POST",
+                body: JSON.stringify({ oldNode: args.oldData, newNode: args.newData }),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+                .then(chart.updateNode(newNode))
+                .catch(error => console.error(error));
+            return false;
         });
+
 
         chart.load(<%= Session["Nodes"] %>);
     </script>
